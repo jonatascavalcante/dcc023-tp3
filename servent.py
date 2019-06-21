@@ -1,12 +1,16 @@
-'''
-TP3 - Redes de Computadores - servent.py
+#!/usr/bin/env python
 
-Desenvolvido por:
-	- Jonatas Cavalcante - 2014004301
-'''
+###########################################
+#               Redes - TP3               #
+#				servent.py 				  #
+#                                         # 
+# Autor: Jonatas Cavalcante               #
+# Matricula: 2014004301                   #
+###########################################
 
 import sys
 import socket
+import message_utils
 
 
 def read_file(fileName):
@@ -35,6 +39,17 @@ def read_file(fileName):
 	return dictionary
 
 
+def connect_to_neighbor(neighbor, servent_request_socket):
+	neighbor_ip = neighbor.split(":")[0]
+	neighbor_port = int(neighbor.split(":")[1])
+	neighbor_addr = (neighbor_ip, neighbor_port)
+
+	servent_request_socket.connect(neighbor_addr)
+
+	msg = message_utils.create_id_msg(0)
+	servent_request_socket.send(msg)
+
+
 def servent():
 	params = len(sys.argv)
 
@@ -52,11 +67,22 @@ def servent():
 	key_values = {}
 	key_values = read_file(FILE)
 
-	print(key_values)
+	servent_response_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	servent_request_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	servert_addr = ('127.0.0.1', LOCALPORT)
+	servent_response_socket.bind(servert_addr)
 
-	servent_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	servert_addr = ('localhost', LOCALPORT)
-	servent_socket.bind(servert_addr)
+	for neighbor in neighbors:
+		connect_to_neighbor(neighbor, servent_request_socket)
+
+	received_msgs = list()
+	client_port = 0
+
+	servent_response_socket.listen(1)
+
+	while True:
+		con, addr = servent_response_socket.accept()
+		treates_servent_msgs(con, addr, servent_request_socket, client_port)
 
 # Fim das declaracoes de funcoes
 
