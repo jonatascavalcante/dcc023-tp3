@@ -92,18 +92,41 @@ def receive_servent_msg(con, addr, nseq):
 		return
 
 
-def treates_keyreq_msg(con, addr, port, socket):
+def get_keyreq_msg_data(con):
 	nseq = struct.unpack("!I", con.recv(4))
 	size = int(struct.unpack("@H", con.recv(2)))
 	key = con.recv(msg_size)
 
+	return nseq, key
+
+
+def get_toporeq_msg_data(con):
+	nseq = struct.unpack("!I", con.recv(4))
+
+	return nseq
+
+
+def get_flood_msg_data(con):
+	ttl = struct.unpack("!H", con.recv(2))
+	nseq = struct.unpack("!I", con.recv(4))
+	src_ip = con.recv(4)
+	src_port = struct.unpack("!H", con.recv(2))
+	size = int(struct.unpack("@H", con.recv(2)))
+	info = con.recv(size)
+
+	return ttl, nseq, src_ip, src_port, info.decode('ascii')
+
+
+def treates_keyreq_msg(nseq, addr, port, key, socket):
 	msg = create_flood_message(KEYFLOOD_MSG_TYPE, 3, nseq, addr, port, key)
 	socket.sendall(msg)
 
 
-def treates_topreq_msg(con, addr, port, socket, local_port):
+def treates_toporeq_msg(con, addr, port, socket, local_port):
 	nseq = struct.unpack("!I", con.recv(4))
 	info = LOCALHOST + ":" + str(local_port)
 
 	msg = create_flood_message(TOPOFLOOD_MSG_TYPE, 3, nseq, addr, port, info)
 	socket.sendall(msg)
+
+

@@ -62,7 +62,7 @@ def client():
 
 	while True:
 		command = input()
-		if ( analyse_command(command, client_request_socket, nseq) ):
+		if (analyse_command(command, client_request_socket, nseq)):
 			last_nseq = nseq
 			nseq += 1
 			client_response_socket.listen(1)
