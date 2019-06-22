@@ -2,7 +2,7 @@
 
 ###########################################
 #               Redes - TP3               #
-#.           message_utils.py             #
+#            message_utils.py             #
 #                                         # 
 # Autor: Jonatas Cavalcante               #
 # Matricula: 2014004301                   #
@@ -48,7 +48,7 @@ def create_toporeq_msg(nseq):
 	return msg
 
 
-def create_flood_message(msg_type, ttl, nseq, src_ip, src_port, info):
+def create_flood_message(msg_type, ttl, nseq, src_port, info):
 	
 	if msg_type == KEYFLOOD_MSG_TYPE:
 		type = struct.pack("!H", KEYFLOOD_MSG_TYPE)
@@ -58,12 +58,15 @@ def create_flood_message(msg_type, ttl, nseq, src_ip, src_port, info):
 	ttl = struct.pack("!H", ttl)
 	nseq = struct.pack("!I", nseq)
 
-	# TODO implementar o ip de origem em representacao binaria
+	src_ip = LOCALHOST.split(".")
+
+	for i in range(0,4):
+		ip += struct.pack("!b", int(src_ip[i]))
 
 	src_port = struct.pack("!H", src_port)
 	size = struct.pack("@H", len(info))
 
-	msg = type + ttl + nseq + src_ip + src_port + size + info.encode('ascii')
+	msg = type + ttl + nseq + ip + src_port + size + info.encode('ascii')
 
 	return msg
 
@@ -109,6 +112,12 @@ def get_toporeq_msg_data(con):
 def get_flood_msg_data(con):
 	ttl = struct.unpack("!H", con.recv(2))
 	nseq = struct.unpack("!I", con.recv(4))
+
+	for i in range(0,4):
+		src_ip += struct.unpack("!b", con.recv(1))[0]
+		if i < 3:
+			src_ip += '.'
+
 	src_ip = con.recv(4)
 	src_port = struct.unpack("!H", con.recv(2))
 	size = int(struct.unpack("@H", con.recv(2)))
@@ -117,16 +126,14 @@ def get_flood_msg_data(con):
 	return ttl, nseq, src_ip, src_port, info.decode('ascii')
 
 
-def treates_keyreq_msg(nseq, addr, port, key, socket):
-	msg = create_flood_message(KEYFLOOD_MSG_TYPE, 3, nseq, addr, port, key)
+def treates_keyreq_msg(nseq, port, key, socket):
+	msg = create_flood_message(KEYFLOOD_MSG_TYPE, 3, nseq, port, key)
 	socket.sendall(msg)
 
 
-def treates_toporeq_msg(con, addr, port, socket, local_port):
+def treates_toporeq_msg(con, port, socket, local_port):
 	nseq = struct.unpack("!I", con.recv(4))
 	info = LOCALHOST + ":" + str(local_port)
 
-	msg = create_flood_message(TOPOFLOOD_MSG_TYPE, 3, nseq, addr, port, info)
+	msg = create_flood_message(TOPOFLOOD_MSG_TYPE, 3, nseq, port, info)
 	socket.sendall(msg)
-
-
