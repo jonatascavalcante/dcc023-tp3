@@ -2,7 +2,7 @@
 
 ###########################################
 #               Redes - TP3               #
-#		     message_utils.py             #
+#.           message_utils.py             #
 #                                         # 
 # Autor: Jonatas Cavalcante               #
 # Matricula: 2014004301                   #
@@ -17,6 +17,7 @@ TOPOREQ_MSG_TYPE = 6
 KEYFLOOD_MSG_TYPE = 7
 TOPOFLOOD_MSG_TYPE = 8
 RESP_MSG_TYPE = 9
+LOCALHOST = '127.0.0.1'
 
 
 def create_id_msg(port):
@@ -102,30 +103,7 @@ def treates_keyreq_msg(con, addr, port, socket):
 
 def treates_topreq_msg(con, addr, port, socket, local_port):
 	nseq = struct.unpack("!I", con.recv(4))
-	info = '127.0.0.1:' + str(local_port)
+	info = LOCALHOST + ":" + str(local_port)
 
 	msg = create_flood_message(TOPOFLOOD_MSG_TYPE, 3, nseq, addr, port, info)
 	socket.sendall(msg)
-
-
-def treates_servent_msgs(con, addr, socket, client_port, local_port):
-	msg_type = struct.unpack("!H", con.recv(2))
-
-	if msg_type == ID_MSG_TYPE:
-		msg_port = struct.unpack("!H", con.recv(2)):
-		if msg_port == 0:
-			socket.con(addr)
-		else:
-			client_port = msg_port
-	elif msg_type == KEYREQ_MSG_TYPE:
-		# TODO verificar se o servent possui a chave e tratar
-		treates_keyreq_msg(con, addr, client_port, socket)
-	elif msg_type == TOPOREQ_MSG_TYPE:
-		# TODO mandar msg resp pro client
-		treates_topreq_msg(con, addr, client_port, socket, local_port)
-	elif msg_type == KEYFLOOD_MSG_TYPE:
-		# TODO
-	elif msg_type == TOPOFLOOD_MSG_TYPE:
-		# TODO
-	else:
-		return

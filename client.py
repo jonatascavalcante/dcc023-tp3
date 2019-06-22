@@ -2,7 +2,7 @@
 
 ###########################################
 #               Redes - TP3               #
-#				client.py 				  #
+#               client.py                 #
 #                                         # 
 # Autor: Jonatas Cavalcante               #
 # Matricula: 2014004301                   #
@@ -34,7 +34,7 @@ def analyse_command(command, client_request_socket, nseq):
 	print("Comando desconhecido")
 	return False
 
-	
+
 def client():
 
 	if len(sys.argv) < 2:
@@ -51,7 +51,7 @@ def client():
 	
 	servent_addr = (SERVENT_IP, SERVENT_PORT)
 	client_request_socket.connect(servent_addr)
-	client_addr = ('127.0.0.1', CLIENT_PORT)
+	client_addr = (message_utils.LOCALHOST, CLIENT_PORT)
 	client_response_socket.bind(client_addr)
 
 	# Cria e envia mensagem ID dizendo que e' client
