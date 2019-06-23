@@ -43,39 +43,44 @@ if len(sys.argv) < 2:
 	print("Formato esperado: python client.py <porto-local> ip: porto")
 	sys.exit()
 
-CLIENT_PORT = sys.argv[1]
+CLIENT_PORT = int(sys.argv[1])
 SERVENT_ADDR = sys.argv[2]
 SERVENT_IP = SERVENT_ADDR.split(":")[0]
 SERVENT_PORT = int(SERVENT_ADDR.split(":")[1])
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
+client_request_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 servent_addr = (SERVENT_IP, SERVENT_PORT)
-client_socket.connect(servent_addr)
+client_request_socket.connect(servent_addr)
 
 # Cria e envia mensagem ID dizendo que e' client
 msg = message_utils.create_id_msg(CLIENT_PORT)
-client_socket.send(msg)
+client_request_socket.send(msg)
 
+client_response_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_addr = (message_utils.LOCALHOST, CLIENT_PORT)
-client_socket.bind(client_addr)
+client_response_socket.bind(client_addr)
 
 nseq = 0
 
 while True:
-	command = input()
-	if (analyse_command(command, nseq)):
-		last_nseq = nseq
-		nseq += 1
-		client_socket.listen(1)
-		client_socket.setdefaulttimeout(4)
-		qtd_msgs = 0
-		while True:
-			con, addr = client_socket.accept()
-			try:
-				message_utils.receive_servent_msg(con, addr, last_nseq)
-				qtd_msgs += 1
-				con.close()
-			except socket.timeout:
-				if qtd_msgs == 0:
-					print("Nenhuma resposta recebida")
+	try:
+		command = input()
+		if (analyse_command(command, nseq)):
+			last_nseq = nseq
+			nseq += 1
+			client_response_socket.listen()
+			client_response_socket.setdefaulttimeout(4)
+			qtd_msgs = 0
+			while True:
+				con, addr = client_response_socket.accept()
+				try:
+					message_utils.receive_servent_msg(con, addr, last_nseq)
+					qtd_msgs += 1
+					con.close()
+				except socket.timeout:
+					if qtd_msgs == 0:
+						print("Nenhuma resposta recebida")
+	except KeyboardInterrupt:
+		client_request_socket.close()
+		client_response_socket.close()
+		sys.exit()

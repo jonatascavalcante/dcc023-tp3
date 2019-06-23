@@ -124,16 +124,3 @@ def get_flood_msg_data(con):
 	info = con.recv(size)
 
 	return ttl, nseq, src_ip, src_port, info.decode('ascii')
-
-
-def treates_keyreq_msg(nseq, port, key, socket):
-	msg = create_flood_message(KEYFLOOD_MSG_TYPE, 3, nseq, port, key)
-	socket.sendall(msg)
-
-
-def treates_toporeq_msg(con, port, socket, local_port):
-	nseq = struct.unpack("!I", con.recv(4))
-	info = LOCALHOST + ":" + str(local_port)
-
-	msg = create_flood_message(TOPOFLOOD_MSG_TYPE, 3, nseq, port, info)
-	socket.sendall(msg)
