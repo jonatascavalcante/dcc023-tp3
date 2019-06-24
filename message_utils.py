@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ###########################################
 #               Redes - TP3               #
@@ -60,6 +60,8 @@ def create_flood_message(msg_type, ttl, nseq, src_port, info):
 
 	src_ip = LOCALHOST.split(".")
 
+	ip = ''
+
 	for i in range(0,4):
 		ip += struct.pack("!b", int(src_ip[i]))
 
@@ -81,26 +83,26 @@ def create_resp_msg(nseq, value):
 	return msg
 
 
-def receive_servent_msg(con, addr, nseq):
-	msg_type = struct.unpack("!H", con.recv(2))
-	msg_nseq = struct.unpack("!I", con.recv(4))
+def receive_servent_msg(con, nseq):
+	msg_type = struct.unpack("!H", con.recv(2))[0]
+	msg_nseq = struct.unpack("!I", con.recv(4))[0]
+
+	(src_ip, src_port) = con.getpeername()
 
 	if msg_type != 9 or msg_nseq != nseq:
-		print("Mensagem incorreta recebida de " + addr)
-		return
+		print("Mensagem incorreta recebida de " + str(src_ip) + ":" + str(src_port))
 	else:
-		msg_size = int(struct.unpack("@H", con.recv(2)))
+		msg_size = struct.unpack("@H", con.recv(2))[0]
 		msg_value = con.recv(msg_size)
-		print(msg_value.decode('ascii') + " " + addr)
-		return
+		print(msg_value.decode('ascii') + " " + str(src_ip) + ":" + str(src_port))
 
 
 def get_keyreq_msg_data(con):
-	nseq = struct.unpack("!I", con.recv(4))
-	size = int(struct.unpack("@H", con.recv(2)))
-	key = con.recv(msg_size)
+	nseq = struct.unpack("!I", con.recv(4))[0]
+	size = struct.unpack("@H", con.recv(2))[0]
+	key = con.recv(size)
 
-	return nseq, key
+	return nseq, key.decode('ascii')
 
 
 def get_toporeq_msg_data(con):

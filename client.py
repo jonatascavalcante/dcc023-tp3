@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ###########################################
 #               Redes - TP3               #
@@ -21,14 +21,15 @@ def analyse_command(command, nseq):
 		if first_char == '?':
 			key = tokens[1]
 			msg = message_utils.create_keyreq_msg(nseq, key)
-			client_socket.send(msg)
+			client_request_socket.send(msg)
 			return True
 		elif first_char == 'T':
 			msg = message_utils.create_toporeq_msg(nseq)
-			client_socket.send(msg)
+			client_request_socket.send(msg)
 			return True
 		elif first_char == 'Q':
-			client_socket.close()
+			client_request_socket.close()
+			client_response_socket.close()
 			sys.exit()
 	
 	print("Comando desconhecido")
@@ -68,18 +69,20 @@ while True:
 		if (analyse_command(command, nseq)):
 			last_nseq = nseq
 			nseq += 1
-			client_response_socket.listen()
-			client_response_socket.setdefaulttimeout(4)
 			qtd_msgs = 0
 			while True:
-				con, addr = client_response_socket.accept()
 				try:
-					message_utils.receive_servent_msg(con, addr, last_nseq)
+					client_response_socket.settimeout(4)
+					client_response_socket.listen()
+					con, addr = client_response_socket.accept()
+					message_utils.receive_servent_msg(con, last_nseq)
 					qtd_msgs += 1
 					con.close()
 				except socket.timeout:
 					if qtd_msgs == 0:
 						print("Nenhuma resposta recebida")
+					break
+
 	except KeyboardInterrupt:
 		client_request_socket.close()
 		client_response_socket.close()

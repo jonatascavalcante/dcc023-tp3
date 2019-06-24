@@ -142,9 +142,9 @@ while inputs:
 		# Aguarda pelo menos um dos sockets estar pronto para ser processado
 		readable, writable, exceptional = select.select(inputs, outputs, inputs)
 
-		for socket in readable:
-			if socket is servent_socket:
-				connection, client_address = socket.accept()
+		for current_socket in readable:
+			if current_socket is servent_socket:
+				connection, client_address = current_socket.accept()
 				connection.setblocking(0)
 				inputs.append(connection)
 
@@ -153,51 +153,52 @@ while inputs:
 
 			else:
 				# Obtem o tipo da mensagem recebida
-				msg_type = int(struct.unpack("!H", socket.recv(2))[0]) 
+				msg_type = struct.unpack("!H", current_socket.recv(2))[0]
 
 				if msg_type:
 					# Trata o recebimento de mensagem do tipo ID
 					if msg_type == message_utils.ID_MSG_TYPE:
-						msg_port = struct.unpack("!H", socket.recv(2))
-						print(msg_port)
+						print("ID")
+						msg_port = struct.unpack("!H", current_socket.recv(2))[0]
 						if msg_port == 0:
-							connected_servents.append(socket.getpeername())
+							connected_servents.append(current_socket.getpeername())
 						else:
-							connected_clients.update({ socket.getpeername() : msg_port })
+							connected_clients.update({ current_socket.getpeername() : msg_port })
 					
 					# Trata o recebimento de mensagem do tipo keyreq
 					elif msg_type == message_utils.KEYREQ_MSG_TYPE:
-						nseq, key = message_utils.get_keyreq_msg_data(socket)
-						verify_if_has_key(key_values, key, nseq, socket, 3)
+						print("KEY_REQ")
+						nseq, key = message_utils.get_keyreq_msg_data(current_socket)
+						verify_if_has_key(key_values, key, nseq, current_socket, 3)
 					
 					# Trata o recebimento de mensagem do tipo toporeq
 					elif msg_type == message_utils.TOPOREQ_MSG_TYPE:
-						nseq = message_utils.get_toporeq_msg_data(socket)
+						nseq = message_utils.get_toporeq_msg_data(current_socket)
 						info = message_utils.LOCALHOST + ":" + str(LOCALPORT)
 						resp_msg = message_utils.create_resp_msg(nseq, info)
 
-						client_port = connected_clients[socket.getpeername()]
+						client_port = connected_clients[current_socket.getpeername()]
 						send_msg_to_client(resp_msg, message_utils.LOCALHOST, client_port)
 						
 						# Transmite a mensagem topoflood a todos os vizinhos
 						msg = message_utils.create_flood_message(message_utils.TOPOFLOOD_MSG_TYPE, 
 								3, nseq, client_port, info)
-						flood_msg(msg, socket)
+						flood_msg(msg, current_socket)
 						
 					# Trata o recebimento de mensagem do tipo keyflood
 					elif msg_type == message_utils.KEYFLOOD_MSG_TYPE:
-						ttl, nseq, src_ip, src_port, key = message_utils.get_flood_msg_data(socket)
+						ttl, nseq, src_ip, src_port, key = message_utils.get_flood_msg_data(current_socket)
 						received_msg = (src_ip, src_port, nseq)
 						# Verifica se ja recebeu essa mensagem antes
 						if received_msg not in received_msgs:
 							ttl -= 1
 							received_msgs.append(received_msg)
 							# Verifica se possui a chave consultada
-							verify_if_has_key(key_values, key, nseq, socket, ttl)
+							verify_if_has_key(key_values, key, nseq, current_socket, ttl)
 					
 					# Trata o recebimento de mensagem do tipo topoflood
 					elif msg_type == message_utils.TOPOFLOOD_MSG_TYPE:
-						ttl, nseq, src_ip, src_port, info = message_utils.get_flood_msg_data(socket)
+						ttl, nseq, src_ip, src_port, info = message_utils.get_flood_msg_data(current_socket)
 						received_msg = (src_ip, src_port, nseq)
 						# Verifica se ja recebeu essa mensagem antes
 						if received_msg not in received_msgs:
@@ -207,36 +208,36 @@ while inputs:
 
 							# Envia a mensagem resp para o client
 							resp_msg = message_utils.create_resp_msg(nseq, info)
-							client_port = connected_clients[socket.getpeername()]
+							client_port = connected_clients[current_socket.getpeername()]
 							send_msg_to_client(resp_msg, message_utils.LOCALHOST, client_port)
 
 							if ttl > 0:
 								# Transmite a mensagem a todos os vizinhos, exceto o que mandou a msg
 								msg = message_utils.create_flood_message(message_utils.TOPOFLOOD_MSG_TYPE, 
 									ttl, nseq, client_port, info)
-								flood_msg(msg, socket)
+								flood_msg(msg, current_socket)
 
-					if socket not in outputs:
-						outputs.append(socket)
+					if current_socket not in outputs:
+						outputs.append(current_socket)
 				
 				else:
-					if socket in outputs:
-						outputs.remove(socket)
-					inputs.remove(socket)
-					socket.close()
-					del message_queues[socket]
+					if current_socket in outputs:
+						outputs.remove(current_socket)
+					inputs.remove(current_socket)
+					current_socket.close()
+					del message_queues[current_socket]
 
-		for socket in writable:
+		for current_socket in writable:
 			try:
-				next_msg = message_queues[socket].get_nowait()
+				next_msg = message_queues[current_socket].get_nowait()
 			except queue.Empty:
-				outputs.remove(socket)
+				outputs.remove(current_socket)
 				pass
 			else:
-				socket.send(next_msg)
+				current_socket.send(next_msg)
 
 	except KeyboardInterrupt:
-		for socket in inputs:
-			socket.close()
+		for current_socket in inputs:
+			current_socket.close()
 		servent_socket.close()
 		sys.exit()
