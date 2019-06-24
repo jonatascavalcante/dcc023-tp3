@@ -41,14 +41,11 @@ def read_file(file_name):
 	return dictionary
 
 
-def set_servent_socket():
+def set_servent_socket(servert_addr):
 	# Realiza a configuracao do socket do servent principal
 	servent_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	servent_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	servent_socket.setblocking(0)
-
-	# Endereco do servent
-	servert_addr = (message_utils.LOCALHOST, LOCALPORT)
 	servent_socket.bind(servert_addr)
 
 	return servent_socket
@@ -117,8 +114,8 @@ for i in range(3, params):
 # Monta o dicionario de par chave-valor do servent corrente 
 key_values = {}
 key_values = read_file(FILE)
-
-servent_socket = set_servent_socket()
+servert_addr = (message_utils.LOCALHOST, LOCALPORT)
+servent_socket = set_servent_socket(servert_addr)
 servent_socket.listen()
 
 received_msgs = list() 		# Lista das mensagens ja recebidas
@@ -203,17 +200,16 @@ while inputs:
 						if received_msg not in received_msgs:
 							ttl -= 1
 							received_msgs.append(received_msg)
-							info += servert_addr[0] + ":" + servert_addr[1]
+							info += " " + servert_addr[0] + ":" + str(servert_addr[1])
 
 							# Envia a mensagem resp para o client
 							resp_msg = message_utils.create_resp_msg(nseq, info)
-							client_port = connected_clients[current_socket.getpeername()]
-							send_msg_to_client(resp_msg, message_utils.LOCALHOST, client_port)
+							send_msg_to_client(resp_msg, message_utils.LOCALHOST, src_port)
 
 							if ttl > 0:
 								# Transmite a mensagem a todos os vizinhos, exceto o que mandou a msg
 								msg = message_utils.create_flood_message(message_utils.TOPOFLOOD_MSG_TYPE, 
-									ttl, nseq, client_port, info)
+									ttl, nseq, src_port, info)
 								flood_msg(msg, current_socket)
 
 					if current_socket not in outputs:

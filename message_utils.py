@@ -10,7 +10,6 @@
 
 import struct
 
-
 ID_MSG_TYPE = 4
 KEYREQ_MSG_TYPE = 5
 TOPOREQ_MSG_TYPE = 6
@@ -20,6 +19,9 @@ RESP_MSG_TYPE = 9
 LOCALHOST = '127.0.0.1'
 
 
+#+---- 2 ---+--- 2 ---------------------------+
+#| TIPO = 4 |  PORTO (ou zero se for servent) |
+#+----------+---------------------------------+
 def create_id_msg(port):
 	type = struct.pack("!H", ID_MSG_TYPE)
 	port = struct.pack("!H", port)
@@ -29,6 +31,9 @@ def create_id_msg(port):
 	return msg
 
 
+#+---- 2 ---+-- 4 -+--- 2 ---+---------------------------+
+#| TIPO = 5 | NSEQ | TAMANHO | CHAVE (ate 400 carateres) | 
+#+----------+------+---------+---------------------------+
 def create_keyreq_msg(nseq, key):
 	type = struct.pack("!H", KEYREQ_MSG_TYPE)
 	nseq = struct.pack("!I", nseq)
@@ -39,6 +44,9 @@ def create_keyreq_msg(nseq, key):
 	return msg
 
 
+#+---- 2 ---+-- 4 -+
+#| TIPO = 6 | NSEQ |
+#+----------+------+
 def create_toporeq_msg(nseq):
 	type = struct.pack("!H", TOPOREQ_MSG_TYPE)
 	nseq = struct.pack("!I", nseq)
@@ -48,6 +56,9 @@ def create_toporeq_msg(nseq):
 	return msg
 
 
+#+---- 2 ------+- 2 -+-- 4 -+--- 4 ---+----- 2 ----+--- 2 ---+--------------------------+ 
+#| TIPO = 7, 8 | TTL | NSEQ | IP_ORIG | PORTO_ORIG | TAMANHO | INFO (ate 400 carateres) | 
+#+-------------+-----+------+---------+------------+---------+--------------------------+
 def create_flood_message(msg_type, ttl, nseq, src_port, info):
 	
 	if msg_type == KEYFLOOD_MSG_TYPE:
@@ -70,6 +81,9 @@ def create_flood_message(msg_type, ttl, nseq, src_port, info):
 	return msg
 
 
+#+---- 2 ---+-- 4 -+--- 2 ---+---------------------------+ 
+#| TIPO = 9 | NSEQ | TAMANHO | VALOR (ate 400 carateres) | 
+#+----------+------+---------+---------------------------+
 def create_resp_msg(nseq, value):
 	type = struct.pack("!H", RESP_MSG_TYPE)
 	nseq = struct.pack("!I", nseq)
