@@ -83,18 +83,17 @@ def flood_msg(msg, connection):
 			input.send(msg)
 
 
-def verify_if_has_key(key_values, key, nseq, connection, ttl):
-	current_client_port = connected_clients[connection.getpeername()]
-
+def verify_if_has_key(key_values, key, nseq, port, connection, ttl):
 	# Verifica se possui a chave consultada
+	print("Verifica")
 	if key in key_values.keys():
 		msg = message_utils.create_resp_msg(nseq, key_values[key])
-		send_msg_to_client(msg, message_utils.LOCALHOST, current_client_port)
+		send_msg_to_client(msg, message_utils.LOCALHOST, port)
 	else:
 		# Transmite a mensagem keyflood a todos os vizinhos, se TTL maior que 0
 		if ttl > 0:
 			msg = message_utils.create_flood_message(message_utils.KEYFLOOD_MSG_TYPE, 
-				ttl, nseq, current_client_port, key)
+				ttl, nseq, port, key)
 			flood_msg(msg, connection)
 
 # Fim das declaracoes de funcoes
@@ -134,6 +133,7 @@ message_queues = {} 		# Filas de mensagens enviadas
 for neighbor in neighbors:
 	connection_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	connect_to_neighbor(connection_socket, neighbor)
+	print("Servent " + str(LOCALPORT) + " connected to " + neighbor)
 	inputs.append(connection_socket)
 
 while inputs:
@@ -158,7 +158,6 @@ while inputs:
 				if msg_type:
 					# Trata o recebimento de mensagem do tipo ID
 					if msg_type == message_utils.ID_MSG_TYPE:
-						print("ID")
 						msg_port = struct.unpack("!H", current_socket.recv(2))[0]
 						if msg_port == 0:
 							connected_servents.append(current_socket.getpeername())
@@ -169,7 +168,8 @@ while inputs:
 					elif msg_type == message_utils.KEYREQ_MSG_TYPE:
 						print("KEY_REQ")
 						nseq, key = message_utils.get_keyreq_msg_data(current_socket)
-						verify_if_has_key(key_values, key, nseq, current_socket, 3)
+						client_port = connected_clients[current_socket.getpeername()]
+						verify_if_has_key(key_values, key, nseq, client_port, current_socket, 3)
 					
 					# Trata o recebimento de mensagem do tipo toporeq
 					elif msg_type == message_utils.TOPOREQ_MSG_TYPE:
@@ -187,14 +187,16 @@ while inputs:
 						
 					# Trata o recebimento de mensagem do tipo keyflood
 					elif msg_type == message_utils.KEYFLOOD_MSG_TYPE:
+						print("KEYFLOOD in " + str(LOCALPORT))
 						ttl, nseq, src_ip, src_port, key = message_utils.get_flood_msg_data(current_socket)
 						received_msg = (src_ip, src_port, nseq)
+
 						# Verifica se ja recebeu essa mensagem antes
 						if received_msg not in received_msgs:
 							ttl -= 1
 							received_msgs.append(received_msg)
 							# Verifica se possui a chave consultada
-							verify_if_has_key(key_values, key, nseq, current_socket, ttl)
+							verify_if_has_key(key_values, key, nseq, src_port, current_socket, ttl)
 					
 					# Trata o recebimento de mensagem do tipo topoflood
 					elif msg_type == message_utils.TOPOFLOOD_MSG_TYPE:
