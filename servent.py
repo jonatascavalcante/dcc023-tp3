@@ -85,7 +85,6 @@ def flood_msg(msg, connection):
 
 def verify_if_has_key(key_values, key, nseq, port, connection, ttl):
 	# Verifica se possui a chave consultada
-	print("Verifica")
 	if key in key_values.keys():
 		msg = message_utils.create_resp_msg(nseq, key_values[key])
 		send_msg_to_client(msg, message_utils.LOCALHOST, port)
@@ -133,8 +132,8 @@ message_queues = {} 		# Filas de mensagens enviadas
 for neighbor in neighbors:
 	connection_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	connect_to_neighbor(connection_socket, neighbor)
-	print("Servent " + str(LOCALPORT) + " connected to " + neighbor)
 	inputs.append(connection_socket)
+	message_queues[connection_socket] = queue.Queue()
 
 while inputs:
 
@@ -166,7 +165,6 @@ while inputs:
 					
 					# Trata o recebimento de mensagem do tipo keyreq
 					elif msg_type == message_utils.KEYREQ_MSG_TYPE:
-						print("KEY_REQ")
 						nseq, key = message_utils.get_keyreq_msg_data(current_socket)
 						client_port = connected_clients[current_socket.getpeername()]
 						verify_if_has_key(key_values, key, nseq, client_port, current_socket, 3)
@@ -187,7 +185,6 @@ while inputs:
 						
 					# Trata o recebimento de mensagem do tipo keyflood
 					elif msg_type == message_utils.KEYFLOOD_MSG_TYPE:
-						print("KEYFLOOD in " + str(LOCALPORT))
 						ttl, nseq, src_ip, src_port, key = message_utils.get_flood_msg_data(current_socket)
 						received_msg = (src_ip, src_port, nseq)
 
@@ -234,7 +231,6 @@ while inputs:
 				next_msg = message_queues[current_socket].get_nowait()
 			except queue.Empty:
 				outputs.remove(current_socket)
-				pass
 			else:
 				current_socket.send(next_msg)
 
