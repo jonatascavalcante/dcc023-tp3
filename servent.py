@@ -3,9 +3,12 @@
 ###########################################
 #               Redes - TP3               #
 #               servent.py                #
-#                                         # 
-# Autor: Jonatas Cavalcante               #
-# Matricula: 2014004301                   #
+#                                         #
+# Autores: Jonatas Cavalcante             #
+#          Mateus Hilario Lima            #
+#                                         #
+# Matriculas: 2014004301                  #
+#             2015033437                  #
 ###########################################
 
 import sys
@@ -21,16 +24,14 @@ def read_file(file_name):
 	except (OSError, IOError) as error:
 		print("Erro ao abrir arquivo.")
 
+	# Monta o dicionario chave-valor com base no arquivo
 	dictionary = {}
 	for line in file:
-		# linha nao vazia
-		if not line.isspace():
+		if not line.isspace(): # Linha nao vazia
 			words = line.split()
-			# primeira palavra da linha
-			if words[0] != '#':
+			if words[0] != '#': # Primeira palavra da linha
 				first_character = str.strip(words[0][0])
-				# verifica se o primeiro caracter nao e' #
-				if first_character != '#':
+				if first_character != '#': # Verifica se o primeiro caracter nao e' #
 					key = str.strip(words[0])
 					text = words[1:]
 					value = ' '.join(text)
@@ -66,6 +67,7 @@ def connect_to_neighbor(connection_socket, neighbor):
 
 
 def send_msg_to_client(msg, src_ip, src_port):
+	# Configura o socket pra enviar a resposta
 	client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	client_addr = (src_ip, src_port)
 	client_socket.connect(client_addr)
@@ -114,6 +116,8 @@ for i in range(3, params):
 # Monta o dicionario de par chave-valor do servent corrente 
 key_values = {}
 key_values = read_file(FILE)
+
+# Configura socket principal que recebe conexoes/mensagens
 servert_addr = (message_utils.LOCALHOST, LOCALPORT)
 servent_socket = set_servent_socket(servert_addr)
 servent_socket.listen()
@@ -212,25 +216,31 @@ while inputs:
 									ttl, nseq, src_port, info)
 								flood_msg(msg, current_socket)
 
+					# Adiciona um canal de saida para resposta
 					if current_socket not in outputs:
 						outputs.append(current_socket)
 				
 				else:
+					# Deixa de escutar por input na conexao
 					if current_socket in outputs:
 						outputs.remove(current_socket)
 					inputs.remove(current_socket)
 					current_socket.close()
+
+					# Remove a fila de mensagem
 					del message_queues[current_socket]
 
+		# Gerencia saidas
 		for current_socket in writable:
 			try:
 				next_msg = message_queues[current_socket].get_nowait()
 			except queue.Empty:
+				# Nenhuma mensagem aguardando, logo para de checkar
 				outputs.remove(current_socket)
 			else:
 				current_socket.send(next_msg)
 
-	except KeyboardInterrupt:
+	except KeyboardInterrupt: # Encerra execucao no caso de Ctrl-C
 		for current_socket in inputs:
 			current_socket.close()
 		servent_socket.close()

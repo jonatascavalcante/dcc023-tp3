@@ -2,10 +2,13 @@
 
 ###########################################
 #               Redes - TP3               #
-#            message_utils.py             #
-#                                         # 
-# Autor: Jonatas Cavalcante               #
-# Matricula: 2014004301                   #
+#               servent.py                #
+#                                         #
+# Autores: Jonatas Cavalcante             #
+#          Mateus Hilario Lima            #
+#                                         #
+# Matriculas: 2014004301                  #
+#             2015033437                  #
 ###########################################
 
 import struct
@@ -93,13 +96,14 @@ def create_resp_msg(nseq, value):
 
 	return msg
 
-
-def receive_servent_msg(con, nseq):
+# Tratamento das mensagens recebidas por um client vindas de um servent
+def receive_servent_msg(con, addr, nseq):
 	msg_type = struct.unpack("!H", con.recv(2))[0]
 	msg_nseq = struct.unpack("!I", con.recv(4))[0]
 
-	(src_ip, src_port) = con.getpeername()
+	(src_ip, src_port) = (addr[0], addr[1])
 
+	# Tratamento em caso de erros na mensagem recebida
 	if msg_type != 9 or msg_nseq != nseq:
 		print("Mensagem incorreta recebida de " + str(src_ip) + ":" + str(src_port))
 	else:
@@ -107,7 +111,7 @@ def receive_servent_msg(con, nseq):
 		msg_value = con.recv(msg_size)
 		print(msg_value.decode('ascii') + " " + str(src_ip) + ":" + str(src_port))
 
-
+# Obtem e retorna os dados da mensagem KEYREQ
 def get_keyreq_msg_data(con):
 	nseq = struct.unpack("!I", con.recv(4))[0]
 	size = struct.unpack("@H", con.recv(2))[0]
@@ -115,29 +119,26 @@ def get_keyreq_msg_data(con):
 
 	return nseq, key.decode('ascii')
 
-
+# Obtem e retorna os dados da mensagem TOPOREQ
 def get_toporeq_msg_data(con):
 	nseq = struct.unpack("!I", con.recv(4))[0]
 
 	return nseq
 
-
+# Obtem e retorna os dados da mensagem KEYFLOOD/TOPOFLOOD
 def get_flood_msg_data(con):
 	ttl = struct.unpack("!H", con.recv(2))[0]
 	nseq = struct.unpack("!I", con.recv(4))[0]
-
-	# for i in range(0,4):
-	# 	src_ip += struct.unpack("!b", con.recv(1))[0]
-	# 	if i < 3:
-	# 		src_ip += '.'
 
 	src_ip_1 = struct.unpack("!b", con.recv(1))[0]
 	src_ip_2 = struct.unpack("!b", con.recv(1))[0]
 	src_ip_3 = struct.unpack("!b", con.recv(1))[0]
 	src_ip_4 = struct.unpack("!b", con.recv(1))[0]
 
+	src_ip = src_ip_1 + src_ip_2 + src_ip_3 + src_ip_4
+
 	src_port = struct.unpack("!H", con.recv(2))[0]
 	size = struct.unpack("@H", con.recv(2))[0]
 	info = con.recv(size)
 
-	return ttl, nseq, LOCALHOST, src_port, info.decode('ascii')
+	return ttl, nseq, src_ip, src_port, info.decode('ascii')
