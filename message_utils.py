@@ -60,15 +60,15 @@ def create_flood_message(msg_type, ttl, nseq, src_port, info):
 
 	src_ip = LOCALHOST.split(".")
 
-	ip = ''
+	msg = type + ttl + nseq
 
 	for i in range(0,4):
-		ip += struct.pack("!b", int(src_ip[i]))
+		msg += struct.pack("!b", int(src_ip[i]))
 
 	src_port = struct.pack("!H", src_port)
 	size = struct.pack("@H", len(info))
 
-	msg = type + ttl + nseq + ip + src_port + size + info.encode('ascii')
+	msg += src_port + size + info.encode('ascii')
 
 	return msg
 
